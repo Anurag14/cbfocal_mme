@@ -1,0 +1,5 @@
+name: SSDA
+channels:
+- defaults
+prefix: /home/anurag/anaconda3/envs/SSDA
+
