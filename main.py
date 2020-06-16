@@ -152,7 +152,7 @@ def train():
         param_lr_f.append(param_group["lr"])
     
     #criterion = nn.CrossEntropyLoss().cuda()
-    beta = 0.9
+    beta = 0.99
     effective_num = 1.0 - np.power(beta, class_num_list)
     per_cls_weights = (1.0 - beta) / np.array(effective_num)
     per_cls_weights = per_cls_weights / np.sum(per_cls_weights) * len(class_num_list)
@@ -275,7 +275,7 @@ def test(loader):
     num_class = len(class_list)
     output_all = np.zeros((0, num_class))
     #criterion = nn.CrossEntropyLoss().cuda()
-    beta = 0.9
+    beta = 0.99
     effective_num = 1.0 - np.power(beta, class_num_list)
     per_cls_weights = (1.0 - beta) / np.array(effective_num)
     per_cls_weights = per_cls_weights / np.sum(per_cls_weights) * len(class_num_list)
