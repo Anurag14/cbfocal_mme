@@ -23,3 +23,9 @@ def save_checkpoint(state, is_best, checkpoint='checkpoint',
     if is_best:
         shutil.copyfile(filepath, os.path.join(checkpoint,
                                                'model_best.pth.tar'))
+def save_mymodel(args, state, is_best):
+
+    filename = '%s/%s_%s_%s.ckpt.pth.tar' % (args.checkpath, args.method, args.source, args.target)
+    torch.save(state, filename)
+    if is_best:
+        shutil.copyfile(filename, filename.replace('pth.tar', 'best.pth.tar'))

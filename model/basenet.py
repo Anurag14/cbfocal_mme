@@ -76,18 +76,18 @@ class VGGBase(nn.Module):
 class Predictor(nn.Module):
     def __init__(self, num_class=64, inc=4096, temp=0.05):
         super(Predictor, self).__init__()
-        self.extrafc = nn.Linear(inc, 300)
-        self.fc = nn.Linear(300, num_class, bias=False)
-        self.fc.weight = torch.nn.Parameter(torch.from_numpy(np.load('semantics/fasttext/fasttext_features.npy')))
+        self.extrafc = nn.Linear(inc, 50)
+        self.fc2 = nn.Linear(50, num_class, bias=False)
+        self.fc2.weight = torch.nn.Parameter(torch.from_numpy(np.load('semantics/glove/glove_features.npy')))
         self.num_class = num_class
         self.temp = temp
 
     def forward(self, x, reverse=False, eta=0.1):
+        x = self.extrafc(x)
         if reverse:
             x = grad_reverse(x, eta)
-        x = self.extrafc(x)
         x = F.normalize(x)
-        x_out = self.fc(x) / self.temp
+        x_out = self.fc2(x) / self.temp
         return x_out
 
 
@@ -95,9 +95,9 @@ class Predictor_deep(nn.Module):
     def __init__(self, num_class=64, inc=4096, temp=0.05):
         super(Predictor_deep, self).__init__()
         self.fc1 = nn.Linear(inc, 512)
-        self.extrafc = nn.Linear(512,300)
-        self.fc2 = nn.Linear(300, num_class, bias=False)
-        self.fc2.weight = torch.nn.Parameter(torch.from_numpy(np.load('semantics/fasttext/fasttext_features.npy').astype('float32')))
+        self.extrafc = nn.Linear(512,50)
+        self.fc2 = nn.Linear(50, num_class, bias=False)
+        self.fc2.weight = torch.nn.Parameter(torch.from_numpy(np.load('semantics/glove/glove_features.npy')))
         self.num_class = num_class
         self.temp = temp
 

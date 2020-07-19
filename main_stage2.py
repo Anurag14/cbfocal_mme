@@ -10,9 +10,10 @@ from model.resnet import resnet34
 from model.basenet import AlexNetBase, VGGBase, Predictor, Predictor_deep
 from utils.utils import weights_init, save_mymodel
 from utils.lr_schedule import inv_lr_scheduler
-from utils.return_dataset import return_dataset
-from utils.loss import entropy, adentropy
-from utils.ldam import FocalLoss
+from utils.return_dataset import return_dataset_stage_two
+from utils.loss import entropy, weighted_adentropy
+from utils.ldam import cb_focal_loss
+from utils.eval import eval_inference, load_weight_file
 # Training settings
 parser = argparse.ArgumentParser(description='SSDA Classification')
 parser.add_argument('--steps', type=int, default=50000, metavar='N',
@@ -62,7 +63,7 @@ args = parser.parse_args()
 print('Dataset %s Source %s Target %s Labeled num perclass %s Network %s' %
       (args.dataset, args.source, args.target, args.num, args.net))
 source_loader, target_loader, target_loader_unl, target_loader_val, \
-    target_loader_test, class_num_list, class_list = return_dataset(args)
+    target_loader_test, class_num_list, class_list = return_dataset_stage_two(args)
 use_gpu = torch.cuda.is_available()
 record_dir = 'record/%s/%s' % (args.dataset, args.method)
 if not os.path.exists(record_dir):
@@ -130,9 +131,6 @@ gt_labels_t = Variable(gt_labels_t)
 sample_labels_t = Variable(sample_labels_t)
 sample_labels_s = Variable(sample_labels_s)
 
-if os.path.exists(args.checkpath) == False:
-    os.mkdir(args.checkpath)
-
 def train():
     G.train()
     F1.train()
@@ -151,13 +149,7 @@ def train():
     for param_group in optimizer_f.param_groups:
         param_lr_f.append(param_group["lr"])
     
-    #criterion = nn.CrossEntropyLoss().cuda()
-    beta = 0.99
-    effective_num = 1.0 - np.power(beta, class_num_list)
-    per_cls_weights = (1.0 - beta) / np.array(effective_num)
-    per_cls_weights = per_cls_weights / np.sum(per_cls_weights) * len(class_num_list)
-    per_cls_weights = torch.FloatTensor(per_cls_weights).cuda()
-    criterion = FocalLoss(weight=per_cls_weights, gamma=0.5).cuda()
+    criterion = cb_focal_loss(class_num_list)
     all_step = args.steps
     data_iter_s = iter(source_loader)
     data_iter_t = iter(target_loader)
@@ -165,9 +157,22 @@ def train():
     len_train_source = len(source_loader)
     len_train_target = len(target_loader)
     len_train_target_semi = len(target_loader_unl)
-    best_acc_test = 0
     counter = 0
-    for step in range(all_step):
+    print("=> loading checkpoint...")
+    filename = 'freezed_models/%s_%s_%s.ckpt.best.pth.tar' % (args.method, args.source, args.target)
+    main_dict = torch.load(filename)
+    best_acc_test = main_dict['best_acc_test']
+    best_acc = 0
+    G.load_state_dict(main_dict['G_state_dict'])
+    F1.load_state_dict(main_dict['F1_state_dict'])
+    optimizer_g.load_state_dict(main_dict['optimizer_g'])
+    optimizer_f.load_state_dict(main_dict['optimizer_f'])
+    print("=> loaded checkpoint...")
+    print("=> inferencing from checkpoint...")
+    eval_inference(G, F1, class_list, class_num_list, args)
+    paths_to_weights = load_weight_file(args)
+    print("=> loaded weight file...")
+    for step in range(main_dict['step'],all_step):
         optimizer_g = inv_lr_scheduler(param_lr_g, optimizer_g, step,
                                        init_lr=args.lr)
         optimizer_f = inv_lr_scheduler(param_lr_f, optimizer_f, step,
@@ -187,6 +192,7 @@ def train():
         im_data_t.data.resize_(data_t[0].size()).copy_(data_t[0])
         gt_labels_t.data.resize_(data_t[1].size()).copy_(data_t[1])
         im_data_tu.data.resize_(data_t_unl[0].size()).copy_(data_t_unl[0])
+        paths = data_t_unl[2]
         zero_grad_all()
         data = torch.cat((im_data_s, im_data_t), 0)
         target = torch.cat((gt_labels_s, gt_labels_t), 0)
@@ -205,7 +211,7 @@ def train():
                 optimizer_f.step()
                 optimizer_g.step()
             elif args.method == 'MME':
-                loss_t = adentropy(F1, output, args.lamda)
+                loss_t = weighted_adentropy(F1, output, args.lamda, paths, paths_to_weights)
                 loss_t.backward()
                 optimizer_f.step()
                 optimizer_g.step()
@@ -228,10 +234,14 @@ def train():
         if step % args.log_interval == 0:
             print(log_train)
         if step % args.save_interval == 0 and step > 0:
+            print("Re-weighting for entropy...")
+            eval_inference(G, F1, class_list, class_num_list, args)
+            paths_to_weights = load_weight_file(args)
             loss_test, acc_test = test(target_loader_test)
             loss_val, acc_val = test(target_loader_val)
             G.train()
             F1.train()
+            
             if acc_test > best_acc_test:
                 best_acc = acc_val
                 best_acc_test = acc_test
@@ -241,13 +251,10 @@ def train():
             if args.early:
                 if counter > args.patience:
                     break
-            print('best acc test %f best acc val %f' % (best_acc_test,
-                                                        acc_val))
+            print('best acc test %f best acc val %f' % (best_acc_test,acc_val))
             print('record %s' % record_file)
             with open(record_file, 'a') as f:
-                f.write('step %d best %f final %f \n' % (step,
-                                                         best_acc_test,
-                                                         acc_val))
+                f.write('step %d best %f final %f \n' % (step,best_acc_test,acc_val))
             G.train()
             F1.train()
             if args.save_check:
@@ -272,13 +279,7 @@ def test(loader):
     size = 0
     num_class = len(class_list)
     output_all = np.zeros((0, num_class))
-    #criterion = nn.CrossEntropyLoss().cuda()
-    beta = 0.99
-    effective_num = 1.0 - np.power(beta, class_num_list)
-    per_cls_weights = (1.0 - beta) / np.array(effective_num)
-    per_cls_weights = per_cls_weights / np.sum(per_cls_weights) * len(class_num_list)
-    per_cls_weights = torch.FloatTensor(per_cls_weights).cuda()
-    criterion = FocalLoss(weight=per_cls_weights, gamma=0.5).cuda()
+    criterion = cb_focal_loss(class_num_list)
     confusion_matrix = torch.zeros(num_class, num_class)
     with torch.no_grad():
         for batch_idx, data_t in enumerate(loader):
@@ -294,9 +295,9 @@ def test(loader):
             correct += pred1.eq(gt_labels_t.data).cpu().sum()
             test_loss += criterion(output1, gt_labels_t) / len(loader)
     print('\nTest set: Average loss: {:.4f}, '
-          'Accuracy: {}/{} F1 ({:.0f}%)\n'.
+          'Accuracy: {}/{} F1 ({:.4f}%)\n'.
           format(test_loss, correct, size,
-                 100. * correct / size))
+                 100. * float(correct) / size))
     return test_loss.data, 100. * float(correct) / size
 
 

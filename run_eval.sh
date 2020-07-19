@@ -1,2 +1,2 @@
 #!/bin/sh
-CUDA_VISIBLE_DEVICES=$1 python eval.py --method $2 --dataset multi_all --source real --target sketch --net $3 --step $4
+CUDA_VISIBLE_DEVICES=0 python eval.py --method $1 --dataset multi --source $2 --target $3 --net $4

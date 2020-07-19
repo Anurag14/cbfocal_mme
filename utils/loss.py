@@ -39,3 +39,23 @@ def adentropy(F1, feat, lamda, eta=1.0):
     loss_adent = lamda * torch.mean(torch.sum(out_t1 *
                                               (torch.log(out_t1 + 1e-5)), 1))
     return loss_adent
+
+
+def weighted_adentropy_aux(F1, feat, lamda, weights,  eta=1.0):
+    out_t1 = F1(feat, reverse=True, eta=eta)
+    out_t1 = F.softmax(out_t1)
+    loss_adent = lamda * torch.mean(weights*torch.sum(out_t1 *
+                                              (torch.log(out_t1 + 1e-5)), 1))
+    return loss_adent
+
+def weighted_adentropy(F1, feat, lamda, paths, weights_to_paths):
+    
+    weight=[]
+    for path in paths:
+        weight.append(float(weights_to_paths[path]))
+    weights = torch.Tensor(weight).cuda()
+    return weighted_adentropy_aux(F1,feat, lamda, weights)
+
+
+
+

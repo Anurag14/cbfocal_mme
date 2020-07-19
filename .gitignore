@@ -3,9 +3,18 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.pyc
+*__pycache__*
 # C extensions
 *.so
 
+
+# specific directory
+freezed_models/
+save_model_ssda/
+record/multi/MME/
+data/multi/
+entropy_weight_files/
+semantics/glove/glove.6B.50d.txt
 # Distribution / packaging
 .Python
 build/
