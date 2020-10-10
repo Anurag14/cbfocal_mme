@@ -5,6 +5,8 @@
 ## Install
 
 `pip install -r requirements.txt`
+`conda env create -f environment. yml`
+`source activate SSDA`
 
 The code is written for Pytorch 0.4.0, but should work for other version
 with some modifications.
@@ -28,8 +30,6 @@ The dataset split files are stored as follows,
 
 `./data/txt/multi/validation_target_images_sketch_3.txt`.
 
-At the moment (8/18/2019), we do not publish all data of DomainNet because we hold a [competition](http://ai.bu.edu/visda-2019/) and some domains are used there.
-
 With regard to office and office home dataset, store the image files in the following ways,
 
  `./data/office/amazon/category_name`,
@@ -48,19 +48,6 @@ where, gpu_id = 0,1,2,3...., method=[MME,ENT,S+T].
 
 
 ### Reference
-This repository is contributed by [Kuniaki Saito](http://cs-people.bu.edu/keisaito/) and [Donghyun Kim](https://cs-people.bu.edu/donhk/)
-If you consider using this code or its derivatives, please consider citing:
-
-```
-@article{saito2019semi,
-  title={Semi-supervised Domain Adaptation via Minimax Entropy},
-  author={Saito, Kuniaki and Kim, Donghyun and Sclaroff, Stan and Darrell, Trevor and Saenko, Kate},
-  journal={ICCV},
-  year={2019}
-}
-```
-
-
-
+This repository is build on top of open source contributions by [Kuniaki Saito](http://cs-people.bu.edu/keisaito/) and [Donghyun Kim](https://cs-people.bu.edu/donhk/).
 
 
