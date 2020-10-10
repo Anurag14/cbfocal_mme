@@ -1,4 +1,4 @@
-# [Semi-supervised Domain Adaptation via Minimax Entropy (ICCV 2019)](https://arxiv.org/pdf/1904.06487.pdf)
+# [Handling Class Imbalance in Domain Adaptation]
 
 ![](docs/fig1.png)
 
@@ -50,6 +50,6 @@ where, gpu_id = 0,1,2,3...., method=[MME,ENT,S+T].
 
 
 ### Reference
-This repository is build on top of open source contributions by [Kuniaki Saito](http://cs-people.bu.edu/keisaito/) and [Donghyun Kim](https://cs-people.bu.edu/donhk/).
+This repository is build on top of [MME](hub.com/VisionLearningGroup/SSDA_MME) repo by [Kuniaki Saito](http://cs-people.bu.edu/keisaito/) and [Donghyun Kim](https://cs-people.bu.edu/donhk/).
 
 
