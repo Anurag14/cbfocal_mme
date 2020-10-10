@@ -5,7 +5,9 @@
 ## Install
 
 `pip install -r requirements.txt`
+
 `conda env create -f environment. yml`
+
 `source activate SSDA`
 
 The code is written for Pytorch 0.4.0, but should work for other version
