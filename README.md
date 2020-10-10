@@ -1,4 +1,4 @@
-# [Handling Class Imbalance in Domain Adaptation]
+# Handling Class Imbalance in Domain Adaptation
 
 ![](docs/fig1.png)
 
