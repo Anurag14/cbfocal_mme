@@ -242,7 +242,7 @@ def train():
             G.train()
             F1.train()
             
-            if acc_test > best_acc_test:
+            if acc_val > best_acc:
                 best_acc = acc_val
                 best_acc_test = acc_test
                 counter = 0
