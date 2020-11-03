@@ -73,6 +73,20 @@ class VGGBase(nn.Module):
         return x
 
 
+class Predictor_baseline(nn.Module):
+    def __init__(self, num_class=64, inc=4096, temp=0.05):
+        super(Predictor_baseline, self).__init__()
+        self.fc = nn.Linear(inc, num_class, bias=False)
+        self.num_class = num_class
+        self.temp = temp
+
+    def forward(self, x, reverse=False, eta=0.1):
+        if reverse:
+            x = grad_reverse(x, eta)
+        x = F.normalize(x)
+        x_out = self.fc(x) / self.temp
+        return x_out
+
 class Predictor(nn.Module):
     def __init__(self, num_class=64, inc=4096, temp=0.05):
         super(Predictor, self).__init__()

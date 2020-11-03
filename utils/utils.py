@@ -27,5 +27,12 @@ def save_mymodel(args, state, is_best):
 
     filename = '%s/%s_%s_%s.ckpt.pth.tar' % (args.checkpath, args.method, args.source, args.target)
     torch.save(state, filename)
+    bestfilename = filename.replace('pth.tar', 'best.pth.tar')
     if is_best:
-        shutil.copyfile(filename, filename.replace('pth.tar', 'best.pth.tar'))
+        if os.path.exists(bestfilename):
+            existing_bestfile = torch.load(bestfilename)
+            if state['best_acc_test'] > existing_bestfile['best_acc_test']:
+                shutil.copyfile(filename, bestfilename)
+                return
+        else:
+            shutil.copyfile(filename, bestfilename) 
